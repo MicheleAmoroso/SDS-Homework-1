@@ -1,0 +1,2 @@
+"0","G = graph_from_literal(1 -+ 2 -+ 3 -+ 4 -+ 1)"
+"0","G = add_links(G)"

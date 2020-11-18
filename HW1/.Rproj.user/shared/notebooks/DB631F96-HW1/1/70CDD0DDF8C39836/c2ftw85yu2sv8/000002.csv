@@ -1,0 +1,2 @@
+"0","#create a random undirected graph which has, for each pairs of vertex, 0.5 probability to have an edge"
+"0","G = sample_gnm(20, 20, directed = FALSE)"

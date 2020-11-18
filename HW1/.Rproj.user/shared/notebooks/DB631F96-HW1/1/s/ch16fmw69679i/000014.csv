@@ -1,0 +1,5 @@
+"0","get_approx_maxcut = function(G){"
+"0","  G_mat_adj = as_adjacency_matrix(G)"
+"0","  G_mat = as.matrix(G_mat_adj)"
+"0","  return(-maxcut(G_mat)$pobj)"
+"0","}"

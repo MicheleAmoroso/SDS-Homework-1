@@ -1,0 +1,164 @@
+---
+title: "HW1"
+author: "Michele Amoroso"
+date: "11/16/2020"
+output: html_document
+---
+
+```{r}
+library(igraph)
+library(ggraph)
+library(sdpt3r)
+```
+
+```{r}
+#get an approximation of max cut using the function maxcut()
+get_approx_maxcut = function(G){
+  G_mat_adj = as_adjacency_matrix(G)
+  G_mat = as.matrix(G_mat_adj)
+  return(-maxcut(G_mat)$pobj)
+}
+```
+
+```{r}
+#given a set of vertices and the edges of the graph, returns the cardinality of the cut set
+cut_len = function(v_set, edges){
+  count = 0
+  #for each {u, v} in edges
+  for(i in 1:nrow(edges)){
+    #if u in v_set and v not in v_set -> count += 1
+    if(edges[i, 1] %in% v_set){
+      if(!(edges[i, 2] %in% v_set)){
+        count = count + 1 
+      }
+    #if u not in v_set and v in v_set -> count += 1
+    }else{
+      if((edges[i, 2] %in% v_set)){
+        count = count + 1 
+      }
+    }
+  }
+  return(count)
+}
+```
+
+```{r}
+#given a graph return the real maxcut, it is en exponential cost function
+get_real_maxcut = function(G){
+  edges = as_edgelist(G)
+  vertices = V(G)
+  max_cut = 0
+  for(i in 1:length(vertices)){
+    comb = t(combn(vertices, i))
+    for(j in 1:nrow(comb)){
+      cut = cut_len(comb[j, ], edges)
+      if(cut > max_cut){
+        max_cut = cut
+      }
+    }
+  }
+  return(max_cut)
+}
+```
+
+```{r}
+random_maxcut = function(G){
+  vertices = V(G)
+  edges = as_edgelist(G)
+  v_set_random = c()
+  for(i in 1:length(vertices)){
+    if(sample(1:2, 1) == 1){
+      v_set_random = c(v_set_random, vertices[i])
+    }
+  }
+  return(cut_len(v_set_random, edges))
+}
+```
+
+
+```{r}
+#create a random undirected graph which has, for each pairs of vertex, 0.5 probability to have an edge
+G = sample_gnm(7, 7, directed = FALSE)
+```
+
+```{r}
+G
+```
+
+
+```{r}
+approx_max_cut = get_approx_maxcut(G)
+```
+
+```{r}
+real_max_cut = get_real_maxcut(G)
+```
+
+```{r}
+approx_max_cut
+real_max_cut
+```
+
+```{r}
+total = 0
+num = 0
+for(i in 1:100){
+  total = total + random_maxcut(G)
+  num = num + 1
+}
+total/num
+```
+
+= PARTE 2 =
+
+```{r}
+add_links = function(G){
+  for(i in 5:1000){
+    G = add_vertices(G, nv=1, attr=list(name = i))
+    #Se numero random è ugugale a 1
+    if(sample(1:2, 1) == 1){
+      v_random = sample(1:(i-1), 1)
+      G = add_edges(G, c(i, v_random))
+    }else{
+      edges = ends(G, E(G))
+      row_random = sample(1:nrow(edges), 1)
+      e_random = edges[row_random, 2]
+      G = add_edges(G, c(i, e_random))
+    }
+  }
+  return(G)
+}
+```
+
+
+```{r}
+g_list = vector("list", 10)
+for(i in 1:10){
+  G = graph_from_literal(1 -+ 2 -+ 3 -+ 4 -+ 1)
+  G = add_links(G)
+  g_list[[i]] = G
+}
+```
+
+
+```{r}
+G = graph_from_literal(1 -+ 2 -+ 3 -+ 4 -+ 1)
+G = add_links(G)
+```
+
+
+```{r}
+d = degree(G, v = V(G), mode = c("all"))
+dd = degree_distribution(G, cumulative = FALSE)
+dd = dd[-1]*1000
+idx = which(dd != 0)
+dd = dd[idx]
+plot(log(idx), log(dd))
+```
+
+```{r}
+idx
+```
+
+
+

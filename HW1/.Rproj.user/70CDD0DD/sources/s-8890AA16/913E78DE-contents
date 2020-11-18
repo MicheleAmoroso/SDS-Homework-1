@@ -1,0 +1,238 @@
+<style>
+  .reveal pre {font-size: 12px;}
+</style>
+
+Looping & Conditional evaluation
+========================================================
+author: Pierpaolo Brutti  •  Statistical Methods for Data Science I
+date: Lab 03
+font-family: Garamond
+
+Agenda
+===
+- `if`, nested `if`, `switch`
+- Iteration: `for`, `while`
+- Avoiding iteration with whole-object ("vectorized") operations
+
+Conditionals
+===
+Have the computer decide what to do next
+- Mathematically:
+
+\[
+|x| = \left\{ \begin{array}{cl} x & \mathrm{if}~x\geq 0 \\
+-x &\mathrm{if}~ x < 0\end{array}\right. ~,~ 
+\psi(x) = \left\{ \begin{array}{cl} x^2 & \mathrm{if}~|x|\leq 1\\
+2|x|-1 &\mathrm{if}~ |x| > 1\end{array}\right.
+\]  
+<small>Exercise: plot $\psi$ in R</small>
+- Computationally:
+
+```
+if the country code is not "US", multiply prices by current exchange rate
+```
+
+if()
+===
+Simplest conditional:
+```
+if (x >= 0) {
+  x
+} else {
+  -x
+}
+```
+Condition in `if` needs to give _one_ `TRUE` or `FALSE` value
+
+`else` clause is optional
+
+one-line actions don't need braces
+```
+if (x >= 0) x else -x
+```
+
+Nested if()
+===
+`if` can *nest* arbitrarily deeply:
+```
+if (x^2 < 1) {
+  x^2
+} else {
+  if (x >= 0) {
+    2*x-1
+  } else {
+     -2*x-1
+  }
+}
+```
+Can get ugly though
+
+Combining Booleans: && and ||
+===
+`&` work `|` like `+` or `*`: combine terms element-wise
+
+Flow control wants *one* Boolean value, and to skip calculating what's not needed
+
+`&&` and `||` give _one_ Boolean, lazily:
+```{r}
+(0 > 0) && (all.equal(42%%6, 169%%13))
+```
+<small>This *never* evaluates the complex expression on the right</small>
+
+Use `&&` and `||` for control, `&` and `|` for subsetting
+
+switch()
+===
+Simplify nested `if` with `switch()`: give a variable to select on, then a value for each option
+```
+switch(type.of.summary,
+       mean=mean(states$Murder),
+       median=median(states$Murder),
+       histogram=hist(states$Murder),
+       "I don't understand")
+```
+
+Iteration/Looping
+===
+Repeat similar actions multiple times:
+```{r}
+table.of.logarithms <- vector(length=7,mode="numeric")
+table.of.logarithms
+for (i in 1:length(table.of.logarithms)) {
+  table.of.logarithms[i] <- log(i)
+}
+table.of.logarithms
+```
+
+for()
+===
+```
+for (i in 1:length(table.of.logarithms)) {
+  table.of.logarithms[i] <- log(i)
+}
+```
+`for` increments a **counter** (here `i`) along a vector (here `1:length(table.of.logarithms)`) and **loops through** the **body* until it runs through the vector
+
+"**iterates over** the vector"
+
+N.B., there is a better (more efficient) way to do this job!
+
+The body of the for() loop
+===
+Can contain just about anything, including other for() loops (nested iteration):
+
+```
+c <- matrix(0, nrow=nrow(a), ncol=ncol(b))
+if (ncol(a) == nrow(b)) {
+  for (i in 1:nrow(c)) {
+    for (j in 1:ncol(c)) {
+      for (k in 1:ncol(a)) {
+        c[i,j] <- c[i,j] + a[i,k]*b[k,j]
+      }
+    }
+  }
+} else {
+  stop("matrices a and b non-conformable")
+}
+```
+
+while(): conditional iteration
+===
+```
+while (max(x) - 1 > 1e-06) {
+  x <- sqrt(x)
+}
+```
+
+Condition in the argument to `while` must be a single Boolean value (like `if`)
+
+Body is looped over until the condition is `FALSE`
+<small>so can loop forever</small>
+
+Loop never begins unless the condition starts `TRUE`
+
+
+for() vs. while()
+===
+for() is better when the number of times to repeat (values to iterate over) is
+clear in advance
+
+while() is better when you can recognize when to stop once you're there, even
+if you can't guess it to begin with
+
+Every for() could be replaced with a while()  
+
+<small>Exercise: show this</small>
+
+Unconditional iteration
+===
+```
+repeat {
+  print("Help! I am Dr. Morris Culpepper, trapped in an endless loop!")
+}
+```
+
+"Manual" control over iteration
+===
+```
+repeat {
+  if (watched) { next() }
+  print("Help! I am Dr. Morris Culpepper, trapped in an endless loop!")
+  if (rescued) { break() }
+}
+```
+`break()` exits the loop; `next()` skips the rest of the body and goes back into the loop
+
+both work with `for()` and `while()` as well
+
+Exercise: how would you replace `while()` with `repeat()`?
+
+Avoiding iteration
+===
+R has many ways of _avoiding_ iteration, by acting on whole objects
+- It's conceptually clearer
+- It leads to simpler code
+- It's faster (sometimes a little, sometimes drastically)
+
+Vectorized arithmetic
+===
+How many languages add 2 vectors:
+```
+c <- vector(length(a))
+for (i in 1:length(a)) {  c[i] <- a[i] + b[i]  }
+```
+
+How R adds 2 vectors:
+```
+a+b
+```
+
+or a triple `for()` loop for matrix multiplication vs. `a %*% b`
+
+Advantages of vectorizing
+===
+- Clarity: the syntax is about _what_ we're doing
+- Concision: we write less
+- Abstraction: the syntax hides _how the computer does it_
+- Generality: same syntax works for numbers, vectors, arrays, ...
+<small>- Speed: modifying big vectors over and over is slow in R; work gets done by optimized low-level code</small>
+
+Vectorized calculations
+===
+Many functions are set up to vectorize automatically
+```{r}
+abs(-3:3)
+log(1:7)
+```
+
+See also `apply()` from last week
+
+We'll come back to this in great detail later
+
+Vectorized conditions: ifelse()
+===
+```
+ifelse(x^2 > 1, 2*abs(x)-1, x^2)
+```
+
+1st argument is a Boolean vector, then pick from the 2nd or 3rd vector arguments as `TRUE` or `FALSE`
