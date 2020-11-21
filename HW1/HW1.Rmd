@@ -1,6 +1,6 @@
 ---
 title: "HW1"
-author: "Michele Amoroso"
+author: "Michele Amoroso e Manuel Balzan"
 date: "11/16/2020"
 output: html_document
 ---
@@ -9,6 +9,7 @@ output: html_document
 library(igraph)
 library(ggraph)
 library(sdpt3r)
+library(reshape2)
 ```
 
 ```{r}
@@ -48,18 +49,22 @@ get_real_maxcut = function(G){
   edges = as_edgelist(G)
   vertices = V(G)
   max_cut = 0
+  cut_content = c()
   for(i in 1:length(vertices)){
     comb = t(combn(vertices, i))
     for(j in 1:nrow(comb)){
       cut = cut_len(comb[j, ], edges)
       if(cut > max_cut){
         max_cut = cut
+        cut_content = comb[j, ]
       }
     }
   }
-  return(max_cut)
+  return(list(max_cut, cut_content))
 }
 ```
+
+
 
 ```{r}
 random_maxcut = function(G){
@@ -75,57 +80,125 @@ random_maxcut = function(G){
 }
 ```
 
+```{r}
+get_random_cut = function(G){
+  total = 0
+  num = 0
+  for(i in 1:100){
+    total = total + random_maxcut(G)
+    num = num + 1
+  }
+  return(total/num)
+}
+```
+
 
 ```{r}
 #create a random undirected graph which has, for each pairs of vertex, 0.5 probability to have an edge
-G = sample_gnm(7, 7, directed = FALSE)
+G1 = sample_gnm(7, 7, directed = FALSE)
+G2 = sample_gnm(20, 20, directed = FALSE)
 ```
 
 ```{r}
-G
+start_time = Sys.time()
+list_cut = get_real_maxcut(G1)
+real_max_cut = list_cut[1]  
+cut_content = list_cut[2]
+end_time = Sys.time()
+end_time - start_time
 ```
 
 
 ```{r}
-approx_max_cut = get_approx_maxcut(G)
+start_time = Sys.time()
+approx_max_cut = get_approx_maxcut(G1)
+end_time = Sys.time()
+end_time - start_time
+
+start_time = Sys.time()
+approx_max_cut = get_approx_maxcut(G2)
+end_time = Sys.time()
+end_time - start_time
 ```
 
 ```{r}
-real_max_cut = get_real_maxcut(G)
+start_time = Sys.time()
+real_max_cut = get_real_maxcut(G1)
+end_time = Sys.time()
+end_time - start_time
+
+start_time = Sys.time()
+real_max_cut = get_real_maxcut(G2)
+end_time = Sys.time()
+end_time - start_time
 ```
 
-```{r}
-approx_max_cut
-real_max_cut
-```
 
 ```{r}
-total = 0
-num = 0
-for(i in 1:100){
-  total = total + random_maxcut(G)
-  num = num + 1
+graph_list = c()
+mat = matrix(nrow = 14, ncol = 4)
+for(i in 4:17){
+  G = sample_gnm(i, i, directed = FALSE)
+  approx_max_cut = get_approx_maxcut(G)
+  random_cut = get_random_cut(G)
+  real_max_cut_list = get_real_maxcut(G)
+  real_max_cut = real_max_cut_list[[1]]
+  if((i %% 4) == 0){
+    cut_content = real_max_cut_list[[2]]
+    graph_list = append(graph_list, list(G, cut_content))
+  }
+  mat[i-3, 1] = i
+  mat[i-3, 2] = round(approx_max_cut, digits = 2)
+  mat[i-3, 3] = real_max_cut
+  mat[i-3, 4] = random_cut
 }
-total/num
 ```
+
+```{r}
+df = as.data.frame(mat)
+colnames(df) <- c("vertices", "approximate max cut","real max cut","randomized max cut")
+df
+```
+
+```{r}
+for (i in seq(1, length(graph_list), by=2)) {
+  graph = graph_list[[i]]
+  cut = graph_list[[i+1]]
+  for(j in 1:length(V(graph))){
+    if(V(graph)[j] %in% cut){
+      V(graph)[j]$color = "red" 
+    }else{
+      V(graph)[j]$color = "blue"
+    }
+  }
+  print(ggraph(graph, layout = "kk") + 
+    geom_edge_link(edge_colour = "grey") + 
+    geom_node_point(colour = V(graph)$color))
+}
+```
+
 
 = PARTE 2 =
 
 ```{r}
-add_links = function(G){
-  for(i in 5:1000){
-    G = add_vertices(G, nv=1, attr=list(name = i))
-    #Se numero random è ugugale a 1
+add_links = function(edges, n){
+  for(i in 5:n){
+    #G = add_vertices(G, nv=1, attr=list(name = i))
     if(sample(1:2, 1) == 1){
       v_random = sample(1:(i-1), 1)
-      G = add_edges(G, c(i, v_random))
+      #G = add_edges(G, c(i, v_random))
+      edges[i, 1] = i
+      edges[i, 2] = v_random
     }else{
-      edges = ends(G, E(G))
-      row_random = sample(1:nrow(edges), 1)
+      row_random = sample(1:(i-1), 1)
       e_random = edges[row_random, 2]
-      G = add_edges(G, c(i, e_random))
+      #G = add_edges(G, c(i, e_random))
+      edges[i, 1] = i
+      edges[i, 2] = e_random
     }
   }
+  G = graph_from_edgelist(edges, directed = TRUE)
+  #G = graph_from_adj_list(edges, mode = c("out"))
   return(G)
 }
 ```
@@ -133,32 +206,86 @@ add_links = function(G){
 
 ```{r}
 g_list = vector("list", 10)
-for(i in 1:10){
-  G = graph_from_literal(1 -+ 2 -+ 3 -+ 4 -+ 1)
-  G = add_links(G)
-  g_list[[i]] = G
-}
+n = 1000000
 ```
 
-
 ```{r}
-G = graph_from_literal(1 -+ 2 -+ 3 -+ 4 -+ 1)
-G = add_links(G)
+edges = matrix(nrow = n, ncol = 2)
+edges[1:4, 1:2] <- c(1,2,3,4,2,3,4,1)
+for(i in 1:1){
+  G = add_links(edges, n)
+  g_list[[i]] = G
+}
+print(G)
 ```
 
 
 ```{r}
 d = degree(G, v = V(G), mode = c("all"))
 dd = degree_distribution(G, cumulative = FALSE)
-dd = dd[-1]*1000
+dd = dd[-1]#*n
 idx = which(dd != 0)
 dd = dd[idx]
-plot(log(idx), log(dd))
+#plot(log(idx), log(dd), type="l")
+plot(idx, dd, log = "xy", type="l")
+```
+```{r}
+exp_law = function(k){
+  res = k^(-2.006906)
+  return(res)
+}
 ```
 
 ```{r}
-idx
+n = 1000
+x = c(1:n)
+y = integer(n)
+for(i in 1:n){
+  y[i] = exp_law(i)
+}
+```
+
+```{r}
+degree = degree(G, v = V(G), mode = c("all"))
+dd = degree_distribution(G, cumulative = TRUE)
+dd = dd[-1]#*n
+idx = 1:length(dd)
+#plot(log(idx), log(dd))
+plot(idx, dd, log = "xy", type="l", col = "red")
+lines(x, y, col = "blue")
+``` 
+
+```{r}
+#Non riesce a plottarlo
+#ggraph(G, layout = "sparse_stress", pivots = 50, weights = NA) + 
+#  geom_edge_link(edge_colour = "grey") + 
+#  geom_node_point(aes(size = degree, alpha = degree), colour = "black")+
+#  theme_graph()
+```
+
+```{r}
+poisson = function(p, nodes_number, k){
+  mu = p*(nodes_number-1)
+  res = (exp(-mu)/sqrt(2*pi*k))*(((exp(1)*mu)/k)^k)
+  return(res)
+}
+```
+
+```{r}
+n = 50
+p = 0.21
+x = c(1:n)
+y = integer(n)
+for(i in 1:n){
+  y[i] = poisson(p, n, i)
+}
+sum(y)
+plot(x, y, log = "", type="l", xlim = c(1,50))
 ```
 
 
+```{r}
+fit1 = fit_power_law(dd)
+fit1
+```
 
