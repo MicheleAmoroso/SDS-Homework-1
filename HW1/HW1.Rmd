@@ -2,8 +2,13 @@
 title: "HW1"
 author: "Michele Amoroso e Manuel Balzan"
 date: "11/16/2020"
-output: html_document
+output:
+  html_document: default
 ---
+
+--PART A--
+
+For this exercise, we are trying to verify that the randomized max-cut algorithm returns a cut that is at least of size OPT/2, where OPT is the size of the maximum cut.
 
 ```{r}
 library(igraph)
@@ -11,6 +16,8 @@ library(ggraph)
 library(sdpt3r)
 library(reshape2)
 ```
+
+The following algorithm uses a built-in function called maxcut, which should return a good approximation of the maximum cut
 
 ```{r}
 #get an approximation of max cut using the function maxcut()
@@ -20,6 +27,8 @@ get_approx_maxcut = function(G){
   return(-maxcut(G_mat)$pobj)
 }
 ```
+
+Here is an implementation of an algorithm that finds the optimal solution to the max-cut problem
 
 ```{r}
 #given a set of vertices and the edges of the graph, returns the cardinality of the cut set
@@ -64,7 +73,7 @@ get_real_maxcut = function(G){
 }
 ```
 
-
+This is the randomized version of the algorithm, which iterates over each vertices and includes them in the cut with 50% probability. The built-in function 'sample' is used as our RNG. We ran the experiment 100 times and defined our max-cut estimate as the average size of the 100 cuts.
 
 ```{r}
 random_maxcut = function(G){
@@ -92,6 +101,9 @@ get_random_cut = function(G){
 }
 ```
 
+The max-cut algorithm is np-hard. This means that it hasn't been solved in polynomial time or less. We expect then that our optimal algorithm will perform (in terms of time) much worse than the other 2 implementations.
+
+Let's verify that.
 
 ```{r}
 #create a random undirected graph which has, for each pairs of vertex, 0.5 probability to have an edge
@@ -100,8 +112,16 @@ G2 = sample_gnm(20, 20, directed = FALSE)
 ```
 
 ```{r}
+# Testing real maxcut
 start_time = Sys.time()
 list_cut = get_real_maxcut(G1)
+real_max_cut = list_cut[1]  
+cut_content = list_cut[2]
+end_time = Sys.time()
+end_time - start_time
+
+start_time = Sys.time()
+list_cut = get_real_maxcut(G2)
 real_max_cut = list_cut[1]  
 cut_content = list_cut[2]
 end_time = Sys.time()
@@ -110,6 +130,7 @@ end_time - start_time
 
 
 ```{r}
+#Testing approx maxcut
 start_time = Sys.time()
 approx_max_cut = get_approx_maxcut(G1)
 end_time = Sys.time()
@@ -122,19 +143,24 @@ end_time - start_time
 ```
 
 ```{r}
+#Testing 
 start_time = Sys.time()
-real_max_cut = get_real_maxcut(G1)
+real_max_cut = get_random_cut(G1)
 end_time = Sys.time()
 end_time - start_time
 
 start_time = Sys.time()
-real_max_cut = get_real_maxcut(G2)
+real_max_cut = get_random_cut(G2)
 end_time = Sys.time()
 end_time - start_time
 ```
 
+COMMENT ON THE RESULTS
+
+Now let's compare the size of the cut that each implementations returns. To do so, we create 12 random graphs with different number of vertices
 
 ```{r}
+#create a matrix: rows = graphs, cols = implementations
 graph_list = c()
 mat = matrix(nrow = 14, ncol = 4)
 for(i in 4:17){
@@ -155,10 +181,15 @@ for(i in 4:17){
 ```
 
 ```{r}
+#convert the matrix to a table
 df = as.data.frame(mat)
 colnames(df) <- c("vertices", "approximate max cut","real max cut","randomized max cut")
 df
 ```
+
+COMMENT ON THE RESULTS 
+
+To better understand what a max-cut looks like, here's a graphical representation for some of the graph generated in the previous part
 
 ```{r}
 for (i in seq(1, length(graph_list), by=2)) {
@@ -178,7 +209,9 @@ for (i in seq(1, length(graph_list), by=2)) {
 ```
 
 
-= PARTE 2 =
+= PART B =
+
+For this exercise we are simulating the so called preferential attachment process and analyzing the resulting graphs.
 
 ```{r}
 add_links = function(edges, n){
@@ -255,8 +288,9 @@ plot(idx, dd, log = "xy", type="l", col = "red")
 lines(x, y, col = "blue")
 ``` 
 
+
 ```{r}
-#Non riesce a plottarlo
+#non riesce a plottarlo1
 #ggraph(G, layout = "sparse_stress", pivots = 50, weights = NA) + 
 #  geom_edge_link(edge_colour = "grey") + 
 #  geom_node_point(aes(size = degree, alpha = degree), colour = "black")+

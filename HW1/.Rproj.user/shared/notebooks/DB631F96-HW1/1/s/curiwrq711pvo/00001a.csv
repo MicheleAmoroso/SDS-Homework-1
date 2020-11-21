@@ -1,6 +1,0 @@
-"0","d = degree(G, v = V(G), mode = c(""all""))"
-"0","dd = degree_distribution(G, cumulative = FALSE)"
-"0","dd = dd[-1]*1000"
-"0","idx = which(dd != 0)"
-"0","dd = dd[idx]"
-"0","plot(log(idx), log(dd))"
