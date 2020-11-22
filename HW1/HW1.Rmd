@@ -1,6 +1,6 @@
 ---
 title: "HW1"
-author: "Michele Amoroso e Manuel Balzan"
+author: "Michele Amoroso 1760027 e Manuel Balzan 1936818"
 date: "11/16/2020"
 output:
   html_document: default
@@ -189,7 +189,7 @@ df
 It is clear that, for each of our test graph sizes, the randomized max-cut algorithm return a cut whose size is at least half of the optimal cut.
 
 
-To better understand what a max-cut looks like, here's a graphical representation of some of the graph generated in the previous part
+To better understand what a max-cut looks like, here's a graphical representation of some of the graph generated in the previous part. The red and blue vertices represent the subsets of the cut partition.
 
 ```{r}
 for (i in seq(1, length(graph_list), by=2)) {
@@ -303,21 +303,28 @@ for(i in 1:length(g_list)){
   plot(idx, dd, log = "xy", type="l", xlab = "degree", ylab = "% vertices")
 }
 ``` 
-
-
+Below is plotted a graph with 1000000 vertices.
 
 ```{r}
-#non riesce a plottarlo1
-#ggraph(G, layout = "sparse_stress", pivots = 50, weights = NA) + 
-#  geom_edge_link(edge_colour = "grey") + 
-#  geom_node_point(aes(size = degree, alpha = degree), colour = "black")+
-#  theme_graph()
+G = g_list[[1]]
+
+plot(simplify(G), vertex.size= 0.01, edge.arrow.size=0.001, vertex.label.cex = 0.75,vertex.label.color = "black", vertex.frame.color = adjustcolor("black", alpha.f = 0), vertex.color = adjustcolor("black", alpha.f = 0), edge.color=adjustcolor("blue", alpha.f = 0.15), display.isolates=FALSE, vertex.label=ifelse(page_rank(G)$vector > 0.1 , "", NA))
 ```
 
+To better visualize the structure of the graph, we decided to plot one with fewer vertices (10000). As we can see there are some hubs and the degree distribution follows a power law.
 
 ```{r}
-#G = g_list[[1]]
+n = 10000
+edges = matrix(nrow = n, ncol = 2)
+edges[1:4, 1:2] <- c(1,2,3,4,2,3,4,1)
+G = add_links(edges, n)
+degree = degree(G, v = V(G), mode = c("all"))
+```
 
-#plot(simplify(G), vertex.size= 0.01, edge.arrow.size=0.001, vertex.label.cex = 0.75,vertex.label.color = "black", vertex.frame.color = adjustcolor("black", alpha.f = 0), #vertex.color = adjustcolor("black", alpha.f = 0), edge.color=adjustcolor("blue", alpha.f = 0.15), display.isolates=FALSE, vertex.label=ifelse(page_rank(G)$vector > 0.1 , "", NA))
+```{r}
+ggraph(G, layout = "kk") + 
+  geom_edge_link(edge_colour = "grey") + 
+  geom_node_point(aes(size = degree, alpha = degree), colour = "black")+
+  theme_graph()
 ```
 
