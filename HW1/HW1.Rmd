@@ -107,8 +107,8 @@ Let's verify that.
 
 ```{r}
 #create a random undirected graph which has, for each pairs of vertex, 0.5 probability to have an edge
-G1 = sample_gnm(7, 7, directed = FALSE)
-G2 = sample_gnm(20, 20, directed = FALSE)
+G1 = sample_gnm(7, 7, directed = FALSE) # 7 edges graph
+G2 = sample_gnm(20, 20, directed = FALSE) # 20 edges graph
 ```
 
 ```{r}
@@ -155,7 +155,8 @@ end_time = Sys.time()
 end_time - start_time
 ```
 
-COMMENT ON THE RESULTS
+As we can see, calculating the optimal cut takes significantly more time than the randomized one. Notice that for small graphs (e.g. 7 nodes) the built-in function maxcut (approximated max-cut) seems to be slower than the optimal algorithm, but again as we increase the graph size the approximated version becomes faster.
+
 
 Now let's compare the size of the cut that each implementations returns. To do so, we create 12 random graphs with different number of vertices
 
@@ -187,7 +188,8 @@ colnames(df) <- c("vertices", "approximate max cut","real max cut","randomized m
 df
 ```
 
-COMMENT ON THE RESULTS 
+It is clear that, for each of our test graph sizes, the randomized max-cut algorithm return a cut whose size is at least half of the optimal cut.
+
 
 To better understand what a max-cut looks like, here's a graphical representation for some of the graph generated in the previous part
 
@@ -211,7 +213,11 @@ for (i in seq(1, length(graph_list), by=2)) {
 
 = PART B =
 
-For this exercise we are simulating the so called preferential attachment process and analyzing the resulting graphs.
+For this exercise we are simulating the so called preferential attachment process and analyzing the resulting distribution.
+
+We first define a function that, given a 2x4 matrix (representing a directed cycle on 4 vertices) adds n vertices (and links) one at a time, connecting them to the existing graph in two possible ways:
+1. link the new vertex to a random vertex of the existing graph
+2. link the new vertex to a vertex of the existing graph chosen at random between those who already have an inlink
 
 ```{r}
 add_links = function(edges, n){
@@ -236,11 +242,14 @@ add_links = function(edges, n){
 }
 ```
 
+We are now creating a list of 10 elements which will contain 10 graphs and selecting the size of each graph
 
 ```{r}
 g_list = vector("list", 10)
 n = 1000000
 ```
+
+Here we are creating the starting graph (directed cycle on 4 vertices), adding the vertices and storing each graph in the list
 
 ```{r}
 edges = matrix(nrow = n, ncol = 2)
