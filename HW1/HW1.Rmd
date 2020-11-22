@@ -16,7 +16,6 @@ library(ggraph)
 library(sdpt3r)
 library(reshape2)
 library(MASS)
-library(plotly)
 ```
 
 The following algorithm uses a built-in function called maxcut, which should return a good approximation of the maximum cut
@@ -36,14 +35,11 @@ Here is an implementation of an algorithm that finds the optimal solution to the
 #given a set of vertices and the edges of the graph, returns the cardinality of the cut set
 cut_len = function(v_set, edges){
   count = 0
-  #for each {u, v} in edges
   for(i in 1:nrow(edges)){
-    #if u in v_set and v not in v_set -> count += 1
     if(edges[i, 1] %in% v_set){
       if(!(edges[i, 2] %in% v_set)){
         count = count + 1 
       }
-    #if u not in v_set and v in v_set -> count += 1
     }else{
       if((edges[i, 2] %in% v_set)){
         count = count + 1 
@@ -55,7 +51,7 @@ cut_len = function(v_set, edges){
 ```
 
 ```{r}
-#given a graph return the real maxcut, it is en exponential cost function
+#given a graph return the real maxcut
 get_real_maxcut = function(G){
   edges = as_edgelist(G)
   vertices = V(G)
@@ -145,7 +141,7 @@ end_time - start_time
 ```
 
 ```{r}
-#Testing 
+#Testing randomized maxcut 
 start_time = Sys.time()
 real_max_cut = get_random_cut(G1)
 end_time = Sys.time()
@@ -160,7 +156,7 @@ end_time - start_time
 As we can see, calculating the optimal cut takes significantly more time than the randomized one. Notice that for small graphs (e.g. 7 nodes) the built-in function maxcut (approximated max-cut) seems to be slower than the optimal algorithm, but again as we increase the graph size the approximated version becomes faster.
 
 
-Now let's compare the size of the cut that each implementations returns. To do so, we create 12 random graphs with different number of vertices
+Now let's compare the size of the cut returned by each implementation. To do so, we create 14 random graphs with different number of vertices
 
 ```{r}
 #create a matrix: rows = graphs, cols = implementations
@@ -193,7 +189,7 @@ df
 It is clear that, for each of our test graph sizes, the randomized max-cut algorithm return a cut whose size is at least half of the optimal cut.
 
 
-To better understand what a max-cut looks like, here's a graphical representation for some of the graph generated in the previous part
+To better understand what a max-cut looks like, here's a graphical representation of some of the graph generated in the previous part
 
 ```{r}
 for (i in seq(1, length(graph_list), by=2)) {
@@ -221,37 +217,35 @@ We first define a function that, given a 2x4 matrix (representing a directed cyc
 1. link the new vertex to a random vertex of the existing graph
 2. link the new vertex to a vertex of the existing graph chosen at random between those who already have an inlink
 
+Each of the possible ways have a 50% percent probability of being selected.
+
 ```{r}
 add_links = function(edges, n){
   for(i in 5:n){
-    #G = add_vertices(G, nv=1, attr=list(name = i))
     if(sample(1:2, 1) == 1){
       v_random = sample(1:(i-1), 1)
-      #G = add_edges(G, c(i, v_random))
       edges[i, 1] = i
       edges[i, 2] = v_random
     }else{
       row_random = sample(1:(i-1), 1)
       e_random = edges[row_random, 2]
-      #G = add_edges(G, c(i, e_random))
       edges[i, 1] = i
       edges[i, 2] = e_random
     }
   }
   G = graph_from_edgelist(edges, directed = TRUE)
-  #G = graph_from_adj_list(edges, mode = c("out"))
   return(G)
 }
 ```
 
-We are now creating a list of 10 elements which will contain 5 graphs and selecting the size of each graph
+We are now creating a list of 5 elements which will contain 5 graphs. We are also setting the size of each graph at 1 Mln nodes 
 
 ```{r}
 g_list = vector("list", 5)
 n = 1000000
 ```
 
-Here we are creating the starting graph (directed cycle on 4 vertices), adding the vertices and storing each graph in the list
+Here we are creating the starting graph (directed cycle on 4 vertices). Then we add the remaining vertices and store each graph in the list
 
 ```{r}
 edges = matrix(nrow = n, ncol = 2)
@@ -260,9 +254,9 @@ for(i in 1:5){
   G = add_links(edges, n)
   g_list[[i]] = G
 }
-print(G)
 ```
 
+We are now plotting, for each graph, their empirical degree distribution which show the number of vertices of each degree on a log-log plot. We are also plotting, on the same figure a power law distribution and a Poisson distribution fitted on our graphs.
 
 ```{r}
 for(i in 1:length(g_list)){
@@ -293,6 +287,9 @@ for(i in 1:length(g_list)){
 }
 ```
 
+As we can see from the plots above, the degree distribution appears to follow a power law. We also get similar results for each graph.
+
+Now we are plotting the complimentary cumulative degree distribution, that is the number of vertices with degree at least k for every value of k (on a log-log plot).
 
 ```{r}
 for(i in 1:length(g_list)){
@@ -303,7 +300,7 @@ for(i in 1:length(g_list)){
   dd = dd[-1]#*n
   idx = 1:length(dd)
   
-  plot(idx, dd, log = "xy", type="l")
+  plot(idx, dd, log = "xy", type="l", xlab = "degree", ylab = "% vertices")
 }
 ``` 
 
@@ -319,8 +316,8 @@ for(i in 1:length(g_list)){
 
 
 ```{r}
-G = g_list[[1]]
+#G = g_list[[1]]
 
-plot(simplify(G), vertex.size= 0.01, edge.arrow.size=0.001, vertex.label.cex = 0.75,vertex.label.color = "black", vertex.frame.color = adjustcolor("black", alpha.f = 0), vertex.color = adjustcolor("black", alpha.f = 0), edge.color=adjustcolor("blue", alpha.f = 0.15), display.isolates=FALSE, vertex.label=ifelse(page_rank(G)$vector > 0.1 , "", NA))
+#plot(simplify(G), vertex.size= 0.01, edge.arrow.size=0.001, vertex.label.cex = 0.75,vertex.label.color = "black", vertex.frame.color = adjustcolor("black", alpha.f = 0), #vertex.color = adjustcolor("black", alpha.f = 0), edge.color=adjustcolor("blue", alpha.f = 0.15), display.isolates=FALSE, vertex.label=ifelse(page_rank(G)$vector > 0.1 , "", NA))
 ```
 
