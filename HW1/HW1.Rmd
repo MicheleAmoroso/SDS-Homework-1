@@ -15,6 +15,7 @@ library(igraph)
 library(ggraph)
 library(sdpt3r)
 library(reshape2)
+library(MASS)
 ```
 
 The following algorithm uses a built-in function called maxcut, which should return a good approximation of the maximum cut
@@ -242,10 +243,10 @@ add_links = function(edges, n){
 }
 ```
 
-We are now creating a list of 10 elements which will contain 10 graphs and selecting the size of each graph
+We are now creating a list of 10 elements which will contain 5 graphs and selecting the size of each graph
 
 ```{r}
-g_list = vector("list", 10)
+g_list = vector("list", 5)
 n = 1000000
 ```
 
@@ -254,7 +255,7 @@ Here we are creating the starting graph (directed cycle on 4 vertices), adding t
 ```{r}
 edges = matrix(nrow = n, ncol = 2)
 edges[1:4, 1:2] <- c(1,2,3,4,2,3,4,1)
-for(i in 1:1){
+for(i in 1:5){
   G = add_links(edges, n)
   g_list[[i]] = G
 }
@@ -263,39 +264,48 @@ print(G)
 
 
 ```{r}
-d = degree(G, v = V(G), mode = c("all"))
-dd = degree_distribution(G, cumulative = FALSE)
-dd = dd[-1]#*n
-idx = which(dd != 0)
-dd = dd[idx]
-#plot(log(idx), log(dd), type="l")
-plot(idx, dd, log = "xy", type="l")
-```
-```{r}
-exp_law = function(k){
-  res = k^(-2.006906)
-  return(res)
+for(i in 1:length(g_list)){
+  G = g_list[[i]]
+  degree = degree(G, v = V(G), mode = c("all"))
+  dd = degree_distribution(G, cumulative = FALSE)
+  dd = dd[-1]#*n
+  idx = which(dd != 0)
+  dd = dd[idx]
+  
+  fit1 = fit_power_law(degree)
+  alpha = fit1$alpha
+  m = length(idx)
+  x = c(1:m)
+  
+  plot(idx, dd, log = "xy", type="l", col = "red", xlab = "degree", ylab = "% vertices")
+  lines(x, x^(-fit1$alpha), col = "blue")
+  
+  fit2 = fitdistr(degree, "Poisson")
+  m = 1000000
+  x = c(1:m)
+  
+  lines(x, dpois(x,lambda=fit2$estimate), col = "green") 
+  
+  legend(150, 1, legend = c("degree distribution", "power law", "poisson"),
+       col = c("red", "blue", "green"), fill = c("red", "blue", "green"))
+  
 }
 ```
 
-```{r}
-n = 1000
-x = c(1:n)
-y = integer(n)
-for(i in 1:n){
-  y[i] = exp_law(i)
-}
-```
 
 ```{r}
-degree = degree(G, v = V(G), mode = c("all"))
-dd = degree_distribution(G, cumulative = TRUE)
-dd = dd[-1]#*n
-idx = 1:length(dd)
-#plot(log(idx), log(dd))
-plot(idx, dd, log = "xy", type="l", col = "red")
-lines(x, y, col = "blue")
+for(i in 1:length(g_list)){
+  G = g_list[[i]]
+  
+  degree = degree(G, v = V(G), mode = c("all"))
+  dd = degree_distribution(G, cumulative = TRUE)
+  dd = dd[-1]#*n
+  idx = 1:length(dd)
+  
+  plot(idx, dd, log = "xy", type="l")
+}
 ``` 
+
 
 
 ```{r}
@@ -307,28 +317,8 @@ lines(x, y, col = "blue")
 ```
 
 ```{r}
-poisson = function(p, nodes_number, k){
-  mu = p*(nodes_number-1)
-  res = (exp(-mu)/sqrt(2*pi*k))*(((exp(1)*mu)/k)^k)
-  return(res)
-}
-```
-
-```{r}
-n = 50
-p = 0.21
-x = c(1:n)
-y = integer(n)
-for(i in 1:n){
-  y[i] = poisson(p, n, i)
-}
-sum(y)
-plot(x, y, log = "", type="l", xlim = c(1,50))
+plot(G, vertex.label= NA, edge.size=0.005, vertex.size = 0, xlab = "")
 ```
 
 
-```{r}
-fit1 = fit_power_law(dd)
-fit1
-```
 
