@@ -16,6 +16,7 @@ library(ggraph)
 library(sdpt3r)
 library(reshape2)
 library(MASS)
+library(plotly)
 ```
 
 The following algorithm uses a built-in function called maxcut, which should return a good approximation of the maximum cut
@@ -316,9 +317,10 @@ for(i in 1:length(g_list)){
 #  theme_graph()
 ```
 
+
 ```{r}
-plot(G, vertex.label= NA, edge.size=0.005, vertex.size = 0, xlab = "")
+G = g_list[[1]]
+
+plot(simplify(G), vertex.size= 0.01, edge.arrow.size=0.001, vertex.label.cex = 0.75,vertex.label.color = "black", vertex.frame.color = adjustcolor("black", alpha.f = 0), vertex.color = adjustcolor("black", alpha.f = 0), edge.color=adjustcolor("blue", alpha.f = 0.15), display.isolates=FALSE, vertex.label=ifelse(page_rank(G)$vector > 0.1 , "", NA))
 ```
-
-
 
